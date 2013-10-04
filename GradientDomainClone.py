@@ -88,9 +88,9 @@ class GradientDomainCloning:
             neighbors, flag = self.count_neighbor(self.idx_map[i])
             x, y = self.idx_map[i]
             # degraded form if neighbors are all within clone region
-            self.b_r[i] = 4*self.F[x,y,0] - self.F[x-1,y,0] -self.F[x+1,y,0] - self.F[x,y-1,0] - self.F[x,y+1,0]
-            self.b_g[i] = 4*self.F[x,y,1] - self.F[x-1,y,1] -self.F[x+1,y,1] - self.F[x,y-1,0] - self.F[x,y+1,1]
-            self.b_b[i] = 4*self.F[x,y,2] - self.F[x-1,y,2] -self.F[x+1,y,2] - self.F[x,y-1,2] - self.F[x,y+1,2]
+            self.b_r[i] = 2*self.F[x,y,0] - 0.5*(self.F[x-1,y,0] +self.F[x+1,y,0] + self.F[x,y-1,0] + self.F[x,y+1,0])
+            self.b_g[i] = 2*self.F[x,y,1] - 0.5*(self.F[x-1,y,1] +self.F[x+1,y,1] + self.F[x,y-1,0] + self.F[x,y+1,1])
+            self.b_b[i] = 4*self.F[x,y,2] - 0.5*(self.F[x-1,y,2] +self.F[x+1,y,2] + self.F[x,y-1,2] + self.F[x,y+1,2])
             # have neighbor(s) on the clone region boundary, include background terms  
             if neighbors!=4:
                 # dummy variable flag used to distinguish between neighbor within the cloning region and on the bounday
@@ -98,9 +98,9 @@ class GradientDomainCloning:
                 self.b_g[i] =  self.b_g[i] + flag[0]*self.B[x-1,y,1] + flag[1]*self.B[x+1,y,1] + flag[2]*self.B[x,y-1,1] + flag[3]*self.B[x,y+1,1]
                 self.b_b[i] =  self.b_g[i] + flag[0]*self.B[x-1,y,2] + flag[1]*self.B[x+1,y,2] + flag[2]*self.B[x,y-1,2] + flag[3]*self.B[x,y+1,2]
         # use conjugate gradient to solve for u
-        u_r = splinalg.cg(self.A_r, self.b_r)
-        u_g = splinalg.cg(self.A_g, self.b_g)
-        u_b = splinalg.cg(self.A_b, self.b_b)       
+        u_r = splinalg.cg(self.A_r, self.b_r)[0]
+        u_g = splinalg.cg(self.A_g, self.b_g)[0]
+        u_b = splinalg.cg(self.A_b, self.b_b)[0]       
         return u_r, u_g, u_b
     
     # combine
@@ -111,10 +111,11 @@ class GradientDomainCloning:
         for i in range(3):
             self.new[:,:,i] = (255-self.M[:,:,i]) * self.B[:,:,i]+ self.M[:,:,i] * self.F[:,:,i]
         # fix cloning region
-        for i in range(self.idx_map):
-            self.new[self.idx_map[0],self.idx_map[1],0] = u_r[i]
-            self.new[self.idx_map[0],self.idx_map[1],1] = u_g[i]
-            self.new[self.idx_map[0],self.idx_map[1],1] = u_b[i]
+        for i in range(len(self.idx_map)):
+            x, y = self.idx_map[i]
+            self.new[x,y,0] = u_r[i]
+            self.new[x,y,1] = u_g[i]
+            self.new[x,y,2] = u_b[i]
 
 
 if __name__ == "__main__":
