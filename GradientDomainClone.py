@@ -38,20 +38,20 @@ class GradientDomainCloning:
         self.b_g = np.zeros(n)
         self.b_b = np.zeros(n)
         # set up sparse matrix A, 4's on main diagnal, -1's and 0's off main diagnal
-        A_r = sparse.lil_matrix((n,n),dtype=int)
-        A_r.setdiag([4 for i in range(n)])
-        A_r.setdiag([-1 for i in range(n-1)],k=1)
-        A_r.setdiag([-1 for i in range(1,n)],k=-1)
+        self.A_r = sparse.lil_matrix((n,n),dtype=int)
+        self.A_r.setdiag([4 for i in range(n)])
+        self.A_r.setdiag([-1 for i in range(n-1)],k=1)
+        self.A_r.setdiag([-1 for i in range(1,n)],k=-1)
         
-        A_g = sparse.lil_matrix((n,n),dtype=int)
-        A_g.setdiag([4 for i in range(n)])
-        A_g.setdiag([-1 for i in range(n-1)],k=1)
-        A_g.setdiag([-1 for i in range(1,n)],k=-1)
+        self.A_g = sparse.lil_matrix((n,n),dtype=int)
+        self.A_g.setdiag([4 for i in range(n)])
+        self.A_g.setdiag([-1 for i in range(n-1)],k=1)
+        self.A_g.setdiag([-1 for i in range(1,n)],k=-1)
         
-        A_b = sparse.lil_matrix((n,n),dtype=int)
-        A_b.setdiag([4 for i in range(n)])
-        A_b.setdiag([-1 for i in range(n-1)],k=1)
-        A_b.setdiag([-1 for i in range(1,n)],k=-1)
+        self.A_b = sparse.lil_matrix((n,n),dtype=int)
+        self.A_b.setdiag([4 for i in range(n)])
+        self.A_b.setdiag([-1 for i in range(n-1)],k=1)
+        self.A_b.setdiag([-1 for i in range(1,n)],k=-1)
 
                                    
     # count within-clone-region-neighbor of a pixel in the clone region                 
@@ -127,12 +127,8 @@ if __name__ == "__main__":
     
     plt.imshow(test.new)
     
-            
-            
-        
+    test.new.to_csv("new.png")
     
-    
-                
             
                 
                     
