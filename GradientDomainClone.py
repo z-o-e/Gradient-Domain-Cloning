@@ -85,20 +85,18 @@ class GradientDomainCloning:
         # split into r, g, b 3 channels and
         # iterate through all pixels in the cloning region indexed in idx_map
         for i in range(len(self.idx_map)):
-            neighbors = self.count_neighbor(self.idx_map[i])[0]
-            flag = self.count_neighbor(self.idx_map[i])[1]
-            x = self.idx_map[i][0]
-            y = self.idx_map[i][1]
-            # inside the cloning region
-            if neighbors == 4:
-                self.b_r[i] = 4*self.F[x,y,0] - self.F[x-1,y,0] -self.F[x+1,y,0] - self.F[x,y-1,0] - self.F[x,y+1,0]
-                self.b_g[i] = 4*self.F[x,y,1] - self.F[x-1,y,1] -self.F[x+1,y,1] - self.F[x,y-1,0] - self.F[x,y+1,1]
-                self.b_b[i] = 4*self.F[x,y,2] - self.F[x-1,y,2] -self.F[x+1,y,2] - self.F[x,y-1,2] - self.F[x,y+1,2]
-            else:
+            neighbors, flag = self.count_neighbor(self.idx_map[i])
+            x, y = self.idx_map[i]
+            # degraded form if neighbors are all within clone region
+            self.b_r[i] = 4*self.F[x,y,0] - self.F[x-1,y,0] -self.F[x+1,y,0] - self.F[x,y-1,0] - self.F[x,y+1,0]
+            self.b_g[i] = 4*self.F[x,y,1] - self.F[x-1,y,1] -self.F[x+1,y,1] - self.F[x,y-1,0] - self.F[x,y+1,1]
+            self.b_b[i] = 4*self.F[x,y,2] - self.F[x-1,y,2] -self.F[x+1,y,2] - self.F[x,y-1,2] - self.F[x,y+1,2]
+            # have neighbor(s) on the clone region boundary, include background terms  
+            if neighbors!=4:
                 # dummy variable flag used to distinguish between neighbor within the cloning region and on the bounday
-                self.b_r[i] = 4 * self.F[x,y,0] - (1-flag[0])*self.F[x-1,y,0] + flag[0]*self.B[x-1,y,0] - (1-flag[1])*self.F[x-1,y,0] + flag[1]*self.B[x-1,y,0] - (1-flag[2])*self.F[x-1,y,0] + flag[2]*self.B[x-1,y,0]
-                self.b_g[i] = 4 * self.F[x,y,1] - (1-flag[0])*self.F[x-1,y,1] + flag[0]*self.B[x-1,y,1] - (1-flag[1])*self.F[x-1,y,1] + flag[1]*self.B[x-1,y,1] - (1-flag[2])*self.F[x-1,y,1] + flag[2]*self.B[x-1,y,1]
-                self.b_b[i] = 4 * self.F[x,y,2] - (1-flag[0])*self.F[x-1,y,2] + flag[0]*self.B[x-1,y,2] - (1-flag[1])*self.F[x-1,y,2] + flag[1]*self.B[x-1,y,2] - (1-flag[2])*self.F[x-1,y,2] + flag[2]*self.B[x-1,y,2]
+                self.b_r[i] =  self.b_r[i] + flag[0]*self.B[x-1,y,0] + flag[1]*self.B[x+1,y,0] + flag[2]*self.B[x,y-1,0] + flag[3]*self.B[x,y+1,0]
+                self.b_g[i] =  self.b_g[i] + flag[0]*self.B[x-1,y,1] + flag[1]*self.B[x+1,y,1] + flag[2]*self.B[x,y-1,1] + flag[3]*self.B[x,y+1,1]
+                self.b_b[i] =  self.b_g[i] + flag[0]*self.B[x-1,y,2] + flag[1]*self.B[x+1,y,2] + flag[2]*self.B[x,y-1,2] + flag[3]*self.B[x,y+1,2]
         # use conjugate gradient to solve for u
         u_r = splinalg.cg(self.A_r, self.b_r)
         u_g = splinalg.cg(self.A_g, self.b_g)
