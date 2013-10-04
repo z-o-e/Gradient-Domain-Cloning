@@ -88,9 +88,9 @@ class GradientDomainCloning:
             neighbors, flag = self.count_neighbor(self.idx_map[i])
             x, y = self.idx_map[i]
             # degraded form if neighbors are all within clone region
-            self.b_r[i] = 2*self.F[x,y,0] - 0.5*(self.F[x-1,y,0] +self.F[x+1,y,0] + self.F[x,y-1,0] + self.F[x,y+1,0])
-            self.b_g[i] = 2*self.F[x,y,1] - 0.5*(self.F[x-1,y,1] +self.F[x+1,y,1] + self.F[x,y-1,0] + self.F[x,y+1,1])
-            self.b_b[i] = 4*self.F[x,y,2] - 0.5*(self.F[x-1,y,2] +self.F[x+1,y,2] + self.F[x,y-1,2] + self.F[x,y+1,2])
+            self.b_r[i] = 4*self.F[x,y,0] - (self.F[x-1,y,0] +self.F[x+1,y,0] + self.F[x,y-1,0] + self.F[x,y+1,0])
+            self.b_g[i] = 4*self.F[x,y,1] - (self.F[x-1,y,1] +self.F[x+1,y,1] + self.F[x,y-1,0] + self.F[x,y+1,1])
+            self.b_b[i] = 4*self.F[x,y,2] - (self.F[x-1,y,2] +self.F[x+1,y,2] + self.F[x,y-1,2] + self.F[x,y+1,2])
             # have neighbor(s) on the clone region boundary, include background terms  
             if neighbors!=4:
                 # dummy variable flag used to distinguish between neighbor within the cloning region and on the bounday
@@ -125,17 +125,4 @@ if __name__ == "__main__":
     test.combine()
     
     plt.imshow(test.new)
-    
-    test.new.to_csv("new.png")
-    
-            
-                
-                    
-            
-        
-        
-        
-        
-            
-    
-            
+           
