@@ -2,6 +2,8 @@
 import Image
 import numpy as np
 from scipy import sparse
+import scipy.sparse.linalg as splinalg
+
 
 F = 'foreground.jpg'
 B = 'background.jpg'
@@ -97,14 +99,15 @@ class GradientDomainCloning:
                 self.b_g[i] = 4 * self.F[x,y,1] - (1-flag[0])*self.F[x-1,y,1] + flag[0]*self.B[x-1,y,1] - (1-flag[1])*self.F[x-1,y,1] + flag[1]*self.B[x-1,y,1] - (1-flag[2])*self.F[x-1,y,1] + flag[2]*self.B[x-1,y,1]
                 self.b_b[i] = 4 * self.F[x,y,2] - (1-flag[0])*self.F[x-1,y,2] + flag[0]*self.B[x-1,y,2] - (1-flag[1])*self.F[x-1,y,2] + flag[1]*self.B[x-1,y,2] - (1-flag[2])*self.F[x-1,y,2] + flag[2]*self.B[x-1,y,2]
         # use conjugate gradient to solve for u
-        u_r = sparse.linalg.cg(self.A_r, self.b_r)
-        u_g = sparse.linalg.cg(self.A_g, self.b_g)
-        u_b = sparse.linalg.cg(self.A_b, self.b_b)       
+        u_r = splinalg(self.A_r, self.b_r)
+        u_g = splinalg(self.A_g, self.b_g)
+        u_b = splinalg(self.A_b, self.b_b)       
         return u_r, u_g, u_b
     
     # combine
-    def combine(self, u_r, u_g, u_b):
-        self.new = np.array(new,dtype=int)
+    def combine(self):
+        self.new = np.array(self.new,dtype=int)
+        u_r,u_g,u_b = self.poisson_solver()
         # naive copy
         for i in range(3):
             self.new[:,:,i] = (255-self.M[:,:,i]) * self.B[:,:,i]+ self.M[:,:,i] * self.F[:,:,i]
@@ -113,6 +116,16 @@ class GradientDomainCloning:
             self.new[self.idx_map[0],self.idx_map[1],0] = u_r[i]
             self.new[self.idx_map[0],self.idx_map[1],1] = u_g[i]
             self.new[self.idx_map[0],self.idx_map[1],1] = u_b[i]
+
+
+# if __name__ == "__main__":
+#     
+#     test = GradientDomainCloning(F, B, M)
+#     
+#     test.combine()
+#     
+    
+
             
             
         
