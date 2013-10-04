@@ -99,9 +99,9 @@ class GradientDomainCloning:
                 self.b_g[i] = 4 * self.F[x,y,1] - (1-flag[0])*self.F[x-1,y,1] + flag[0]*self.B[x-1,y,1] - (1-flag[1])*self.F[x-1,y,1] + flag[1]*self.B[x-1,y,1] - (1-flag[2])*self.F[x-1,y,1] + flag[2]*self.B[x-1,y,1]
                 self.b_b[i] = 4 * self.F[x,y,2] - (1-flag[0])*self.F[x-1,y,2] + flag[0]*self.B[x-1,y,2] - (1-flag[1])*self.F[x-1,y,2] + flag[1]*self.B[x-1,y,2] - (1-flag[2])*self.F[x-1,y,2] + flag[2]*self.B[x-1,y,2]
         # use conjugate gradient to solve for u
-        u_r = splinalg(self.A_r, self.b_r)
-        u_g = splinalg(self.A_g, self.b_g)
-        u_b = splinalg(self.A_b, self.b_b)       
+        u_r = splinalg.cg(self.A_r, self.b_r)
+        u_g = splinalg.cg(self.A_g, self.b_g)
+        u_b = splinalg.cg(self.A_b, self.b_b)       
         return u_r, u_g, u_b
     
     # combine
@@ -118,12 +118,12 @@ class GradientDomainCloning:
             self.new[self.idx_map[0],self.idx_map[1],1] = u_b[i]
 
 
-# if __name__ == "__main__":
-#     
-#     test = GradientDomainCloning(F, B, M)
-#     
-#     test.combine()
-#     
+if __name__ == "__main__":
+    
+    test = GradientDomainCloning(F, B, M)
+    
+    test.combine()
+    
     
 
             
