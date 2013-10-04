@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import matplotlib.pylab as plt
 import Image
 import numpy as np
 from scipy import sparse
@@ -124,8 +125,8 @@ if __name__ == "__main__":
     
     test.combine()
     
+    plt.imshow(test.new)
     
-
             
             
         
