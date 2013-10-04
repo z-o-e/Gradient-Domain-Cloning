@@ -17,7 +17,7 @@ class GradientDomainCloning:
         # mask
         self.M = np.asarray(Image.open(M),dtype=int)        
         # new image after gradient domain cloning
-        self.new = Image.new('RGB',self.B.size,,dtype=int)        
+        self.new = Image.new('RGB',self.B.shape[:2])        
         # map coordinate of pixels to be calculated to index_map according to mask
         self.idx_map = []
         for i in range(self.M.shape[0]):
@@ -35,45 +35,43 @@ class GradientDomainCloning:
         self.b_g = np.zeros(n)
         self.b_b = np.zeros(n)
         # set up sparse matrix A, 4's on main diagnal, -1's and 0's off main diagnal
-        for i in range(n):
-            for j in range(n):
-                # on diagnal
-                if i==j:
-                    self.A_r[i,j] = 4
-                    self.A_g[i,j] = 4
-                    self.A_b[i,j] = 4
-                # below/above diagonal
-                elif i == j-1 or i == j+1:
-                    self.A_r[i,j] = -1
-                    self.A_g[i,j] = -1
-                    self.A_b[i,j] = -1
-                # the rest
-                else:
-                    self.A_r[i,j] = 0
-                    self.A_g[i,j] = 0
-                    self.A_b[i,j] = 0
+        A_r = sparse.lil_matrix((n,n),dtype=int)
+        A_r.setdiag([4 for i in range(n)])
+        A_r.setdiag([-1 for i in range(n-1)],k=1)
+        A_r.setdiag([-1 for i in range(1,n)],k=-1)
+        
+        A_g = sparse.lil_matrix((n,n),dtype=int)
+        A_g.setdiag([4 for i in range(n)])
+        A_g.setdiag([-1 for i in range(n-1)],k=1)
+        A_g.setdiag([-1 for i in range(1,n)],k=-1)
+        
+        A_b = sparse.lil_matrix((n,n),dtype=int)
+        A_b.setdiag([4 for i in range(n)])
+        A_b.setdiag([-1 for i in range(n-1)],k=1)
+        A_b.setdiag([-1 for i in range(1,n)],k=-1)
+
                                    
     # count within-clone-region-neighbor of a pixel in the clone region                 
     def count_neighbor(self, pix_idx):       
         count = 0
         boundary_flag = [0,0,0,0]  
         # has left neighbor or not
-        if [pix_idx[0]-1, index[1]] in self.idx_map:
+        if [pix_idx[0]-1, pix_idx[1]] in self.idx_map:
             count +=1
         else:
             boundary_flag[0] = 1
         # has right neighbor or not
-        if [pix_idx[0]+1, index[1]] in self.idx_map:
+        if [pix_idx[0]+1, pix_idx[1]] in self.idx_map:
             count +=1
         else:
             boundary_flag[1] = 1
         # has above neighbor or not
-        if [pix_idx[0], index[1]-1] in self.idx_map:
+        if [pix_idx[0], pix_idx[1]-1] in self.idx_map:
             count +=1
         else:
             boundary_flag[2] = 1
         # has below neighbor or not
-        if [pix_idx[0], index[1]+1] in self.idx_map:
+        if [pix_idx[0], pix_idx[1]+1] in self.idx_map:
             count +=1
         else:
             boundary_flag[3] = 1
@@ -83,13 +81,13 @@ class GradientDomainCloning:
     def poisson_solver(self):
         # split into r, g, b 3 channels and
         # iterate through all pixels in the cloning region indexed in idx_map
-        for i in range(self.idx_map):
+        for i in range(len(self.idx_map)):
             neighbors = self.count_neighbor(self.idx_map[i])[0]
             flag = self.count_neighbor(self.idx_map[i])[1]
             x = self.idx_map[i][0]
             y = self.idx_map[i][1]
             # inside the cloning region
-            if neighbors = 4:
+            if neighbors == 4:
                 self.b_r[i] = 4*self.F[x,y,0] - self.F[x-1,y,0] -self.F[x+1,y,0] - self.F[x,y-1,0] - self.F[x,y+1,0]
                 self.b_g[i] = 4*self.F[x,y,1] - self.F[x-1,y,1] -self.F[x+1,y,1] - self.F[x,y-1,0] - self.F[x,y+1,1]
                 self.b_b[i] = 4*self.F[x,y,2] - self.F[x-1,y,2] -self.F[x+1,y,2] - self.F[x,y-1,2] - self.F[x,y+1,2]
@@ -103,6 +101,21 @@ class GradientDomainCloning:
         u_g = sparse.linalg.cg(self.A_g, self.b_g)
         u_b = sparse.linalg.cg(self.A_b, self.b_b)       
         return u_r, u_g, u_b
+    
+    # combine
+    def combine(self, u_r, u_g, u_b):
+        self.new = np.array(new,dtype=int)
+        # naive copy
+        for i in range(3):
+            self.new[:,:,i] = (255-self.M[:,:,i]) * self.B[:,:,i]+ self.M[:,:,i] * self.F[:,:,i]
+        # fix cloning region
+        for i in range(self.idx_map):
+            self.new[self.idx_map[0],self.idx_map[1],0] = u_r[i]
+            self.new[self.idx_map[0],self.idx_map[1],1] = u_g[i]
+            self.new[self.idx_map[0],self.idx_map[1],1] = u_b[i]
+            
+            
+        
     
     
                 
