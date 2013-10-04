@@ -94,9 +94,10 @@ class GradientDomainCloning:
                 self.b_g[i] = 4*self.F[x,y,1] - self.F[x-1,y,1] -self.F[x+1,y,1] - self.F[x,y-1,0] - self.F[x,y+1,1]
                 self.b_b[i] = 4*self.F[x,y,2] - self.F[x-1,y,2] -self.F[x+1,y,2] - self.F[x,y-1,2] - self.F[x,y+1,2]
             else:
-                self.b_r[i] = 4 * self.F[x,y,0] - (1-flag[0])*self.F[x-1,y,0] - flag[0]*self.B[x-1,y,0] - (1-flag[1])*self.F[x-1,y,0] - flag[1]*self.B[x-1,y,0] - (1-flag[2])*self.F[x-1,y,0] - flag[2]*self.B[x-1,y,0]
-                self.b_g[i] = 4 * self.F[x,y,1] - (1-flag[0])*self.F[x-1,y,1] - flag[0]*self.B[x-1,y,1] - (1-flag[1])*self.F[x-1,y,1] - flag[1]*self.B[x-1,y,1] - (1-flag[2])*self.F[x-1,y,1] - flag[2]*self.B[x-1,y,1]
-                self.b_b[i] = 4 * self.F[x,y,2] - (1-flag[0])*self.F[x-1,y,2] - flag[0]*self.B[x-1,y,2] - (1-flag[1])*self.F[x-1,y,2] - flag[1]*self.B[x-1,y,2] - (1-flag[2])*self.F[x-1,y,2] - flag[2]*self.B[x-1,y,2]
+                # dummy variable flag used to distinguish between neighbor within the cloning region and on the bounday
+                self.b_r[i] = 4 * self.F[x,y,0] - (1-flag[0])*self.F[x-1,y,0] + flag[0]*self.B[x-1,y,0] - (1-flag[1])*self.F[x-1,y,0] + flag[1]*self.B[x-1,y,0] - (1-flag[2])*self.F[x-1,y,0] + flag[2]*self.B[x-1,y,0]
+                self.b_g[i] = 4 * self.F[x,y,1] - (1-flag[0])*self.F[x-1,y,1] + flag[0]*self.B[x-1,y,1] - (1-flag[1])*self.F[x-1,y,1] + flag[1]*self.B[x-1,y,1] - (1-flag[2])*self.F[x-1,y,1] + flag[2]*self.B[x-1,y,1]
+                self.b_b[i] = 4 * self.F[x,y,2] - (1-flag[0])*self.F[x-1,y,2] + flag[0]*self.B[x-1,y,2] - (1-flag[1])*self.F[x-1,y,2] + flag[1]*self.B[x-1,y,2] - (1-flag[2])*self.F[x-1,y,2] + flag[2]*self.B[x-1,y,2]
         # use conjugate gradient to solve for u
         u_r = sparse.linalg.cg(self.A_r, self.b_r)
         u_g = sparse.linalg.cg(self.A_g, self.b_g)
