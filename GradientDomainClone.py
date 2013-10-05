@@ -49,7 +49,7 @@ class GradientDomainCloning:
         count = 0
         boundary_flag = [0]*4 
         neighbor_idx = [-1]*4
-        pix_idx[0], pix_idx[1] = x, y  
+        x, y  = pix_idx[0], pix_idx[1]  
         # has left neighbor or not
         if [x-1, y] in self.idx_map:
             count +=1
@@ -121,6 +121,7 @@ class GradientDomainCloning:
                     self.new[x,y,j] = u[j,i]
                 else:
                     self.new[x,y,j] = 255
+        np.asarray(self.new, dtype='uint8')
 
 
 if __name__ == "__main__":
