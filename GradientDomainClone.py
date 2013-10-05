@@ -10,6 +10,9 @@ F = 'foreground.jpg'
 B = 'background.jpg'
 M = 'matte.png'
 
+f='f.jpg'
+b='b.jpg'
+m='m.png'
 
 class GradientDomainCloning:
     def __init__(self, F, B, M):
@@ -23,7 +26,7 @@ class GradientDomainCloning:
         self.new = Image.new('RGB',self.B.shape[:2])        
         
         # n is the number of pixels in the clone region (number of equations) 
-        n = sum(sum(M[:,:,0]))/255
+        n = sum(sum(self.M[:,:,0]))/255
         
         # nxn matrix A, nx1 vector b are used to solve poisson equation Au=b for nx1 unknown pixel color vector u
         # r, g, b, 3 channels are calculated seperately
