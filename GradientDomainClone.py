@@ -103,8 +103,7 @@ class GradientDomainCloning:
             u[:,channel] = splinalg.cg(self.A[:,:,channel], self.b[:,:,channel])[0]
     
         return u
-        
-        
+               
     # combine
     def combine(self):
         self.new = np.array(self.new,dtype=int)
@@ -116,7 +115,10 @@ class GradientDomainCloning:
         for i in range(len(self.idx_map)):
             x, y = self.idx_map[i]
             for j in range(3):
-                self.new[x,y,j] = u[i,j]
+                if u[i,j]<256 and u[i,j]>=0:
+                    self.new[x,y,j] = u[i,j]
+                else:
+                    self.new[x,y,j] = 255
 
 
 if __name__ == "__main__":
