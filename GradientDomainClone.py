@@ -38,7 +38,8 @@ class GradientDomainCloning:
         
         # nxn matrix A, nx1 vector b are used to solve poisson equation Au=b for nx1 unknown pixel color vector u
         # r, g, b, 3 channels are calculated seperately
-        self.b = np.zeros((n,3))
+        b= np.zeros(n)
+        self.b = [b, b, b]
         
         # set up sparse matrix A, 4's on main diagnal
         a = sparse.lil_matrix((n,n),dtype=int)
