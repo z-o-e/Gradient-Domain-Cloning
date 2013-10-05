@@ -130,7 +130,6 @@ if __name__ == "__main__":
     
     test.combine()
     
-    new = Image.fromarray(test.new)
     
-    plt.imshow(new)
+    plt.imshow(test.new)
                
