@@ -21,101 +21,103 @@ class GradientDomainCloning:
         self.M = np.asarray(Image.open(M),dtype=int)        
         # new image after gradient domain cloning
         self.new = Image.new('RGB',self.B.shape[:2])        
-        # map coordinate of pixels to be calculated to index_map according to mask
-        self.idx_map = []
-        for i in range(self.M.shape[0]):
-            for j in range(self.M.shape[1]):
-                if self.M[:,:,0][i][j]==255:
-                    self.idx_map.append([i,j])                    
-        # nxn matrix A, nx1 vector b are used to solve poisson equation Au=b
-        # for nx1 unknown pixel color vector u
+        
+        # n is the number of pixels in the clone region (number of equations) 
+        n = sum(sum(M[:,:,0]))/255
+        
+        # nxn matrix A, nx1 vector b are used to solve poisson equation Au=b for nx1 unknown pixel color vector u
         # r, g, b, 3 channels are calculated seperately
-        n = len(self.idx_map)
-        self.A_r = sparse.lil_matrix((n,n),dtype=int)
-        self.A_g = sparse.lil_matrix((n,n),dtype=int)
-        self.A_b = sparse.lil_matrix((n,n),dtype=int)
-        self.b_r = np.zeros(n)
-        self.b_g = np.zeros(n)
-        self.b_b = np.zeros(n)
-        # set up sparse matrix A, 4's on main diagnal, -1's and 0's off main diagnal
-        self.A_r = sparse.lil_matrix((n,n),dtype=int)
-        self.A_r.setdiag([4 for i in range(n)])
-        self.A_r.setdiag([-1 for i in range(n-1)],k=1)
-        self.A_r.setdiag([-1 for i in range(1,n)],k=-1)
+        self.b = np.zeros((n,3))
+        # set up sparse matrix A, 4's on main diagnal
+        self.A = sparse.lil_matrix((n,n,3),dtype=int)
+        for i in range(3):
+            self.A[:,:,i].setdiag([4 for i in range(n)])
+            
+        # idx_map maps coordinate of pixels of the cloned region (if pixel is in mask, then it's an element of idx_map)
+        self.idx_map = np.zeros((n,2))
+        for s in range(n):
+            for i in range(self.M.shape[0]):
+                for j in range(self.M.shape[1]):
+                    if self.M[:,:,0][i][j]==255:
+                        self.idx_map[s] = [i,j]
+                            
         
-        self.A_g = sparse.lil_matrix((n,n),dtype=int)
-        self.A_g.setdiag([4 for i in range(n)])
-        self.A_g.setdiag([-1 for i in range(n-1)],k=1)
-        self.A_g.setdiag([-1 for i in range(1,n)],k=-1)
-        
-        self.A_b = sparse.lil_matrix((n,n),dtype=int)
-        self.A_b.setdiag([4 for i in range(n)])
-        self.A_b.setdiag([-1 for i in range(n-1)],k=1)
-        self.A_b.setdiag([-1 for i in range(1,n)],k=-1)
 
                                    
     # count within-clone-region-neighbor of a pixel in the clone region                 
     def count_neighbor(self, pix_idx):       
         count = 0
-        boundary_flag = [0,0,0,0]  
+        boundary_flag = [0]*4 
+        neighbor_idx = [0]*4  
         # has left neighbor or not
         if [pix_idx[0]-1, pix_idx[1]] in self.idx_map:
             count +=1
+            neighbor_idx[0] = self.idx_map.index([pix_idx[0]-1, pix_idx[1]]) 
         else:
             boundary_flag[0] = 1
         # has right neighbor or not
         if [pix_idx[0]+1, pix_idx[1]] in self.idx_map:
             count +=1
+            neighbor_idx[1] = self.idx_map.index([pix_idx[0]+1, pix_idx[1]]) 
         else:
             boundary_flag[1] = 1
         # has above neighbor or not
         if [pix_idx[0], pix_idx[1]-1] in self.idx_map:
             count +=1
+            neighbor_idx[2] = self.idx_map.index([pix_idx[0], pix_idx[1]-1]) 
         else:
             boundary_flag[2] = 1
         # has below neighbor or not
         if [pix_idx[0], pix_idx[1]+1] in self.idx_map:
             count +=1
+            neighbor_idx[3] = self.idx_map.index([pix_idx[0], pix_idx[1]+1]) 
         else:
             boundary_flag[3] = 1
-        return count,boundary_flag
+        return count,boundary_flag,neighbor_idx
     
-    # set up b and solve discrete poisson equation    
+    # set up b and off-diagnal elements of A 
+    # solve discrete poisson equation    
     def poisson_solver(self):
         # split into r, g, b 3 channels and
         # iterate through all pixels in the cloning region indexed in idx_map
         for i in range(len(self.idx_map)):
-            neighbors, flag = self.count_neighbor(self.idx_map[i])
+            count, flag, neighbor_idx = self.count_neighbor(self.idx_map[i])
             x, y = self.idx_map[i]
-            # degraded form if neighbors are all within clone region
-            self.b_r[i] = 4*self.F[x,y,0] - (self.F[x-1,y,0] +self.F[x+1,y,0] + self.F[x,y-1,0] + self.F[x,y+1,0])
-            self.b_g[i] = 4*self.F[x,y,1] - (self.F[x-1,y,1] +self.F[x+1,y,1] + self.F[x,y-1,0] + self.F[x,y+1,1])
-            self.b_b[i] = 4*self.F[x,y,2] - (self.F[x-1,y,2] +self.F[x+1,y,2] + self.F[x,y-1,2] + self.F[x,y+1,2])
+            # set neighboring pixel index in A to -1
+            for n in range(4):
+                if neighbor_idx[n]!=0:
+                    for m in range(3):
+                        A[neighbor_idx[n][0],neighbor_idx[n][0],m] = -1
+                        
+            # b is degraded form if neighbors are all within clone region
+            for channel in range(3):
+                self.b[:,:,channel] = 4*self.F[x,y,channel] - (self.F[x-1,y,channel] +self.F[x+1,y,channel] + self.F[x,y-1,channel] + self.F[x,y+1,channel])
+            
             # have neighbor(s) on the clone region boundary, include background terms  
-            if neighbors!=4:
+            if count!=4:
                 # dummy variable flag used to distinguish between neighbor within the cloning region and on the bounday
-                self.b_r[i] =  self.b_r[i] + flag[0]*self.B[x-1,y,0] + flag[1]*self.B[x+1,y,0] + flag[2]*self.B[x,y-1,0] + flag[3]*self.B[x,y+1,0]
-                self.b_g[i] =  self.b_g[i] + flag[0]*self.B[x-1,y,1] + flag[1]*self.B[x+1,y,1] + flag[2]*self.B[x,y-1,1] + flag[3]*self.B[x,y+1,1]
-                self.b_b[i] =  self.b_g[i] + flag[0]*self.B[x-1,y,2] + flag[1]*self.B[x+1,y,2] + flag[2]*self.B[x,y-1,2] + flag[3]*self.B[x,y+1,2]
+                for channel in range(3):
+                    self.b[:,:,channel] =  self.b[:,:,channel]  + flag[0]*self.B[x-1,y,channel] + flag[1]*self.B[x+1,y,channel] + flag[2]*self.B[x,y-1,channel] + flag[3]*self.B[x,y+1,channel]
         # use conjugate gradient to solve for u
-        u_r = splinalg.cg(self.A_r, self.b_r)[0]
-        u_g = splinalg.cg(self.A_g, self.b_g)[0]
-        u_b = splinalg.cg(self.A_b, self.b_b)[0]       
-        return u_r, u_g, u_b
+        u = np.zeros((n,3))
+        for channel in range(3):
+            u[:,channel] = splinalg.cg(self.A[:,:,channel], self.b[:,:,channel])[0]
     
+        return u
+        
+        
     # combine
     def combine(self):
         self.new = np.array(self.new,dtype=int)
-        u_r,u_g,u_b = self.poisson_solver()
+        u = self.poisson_solver()
         # naive copy
         for i in range(3):
             self.new[:,:,i] = (255-self.M[:,:,i]) * self.B[:,:,i]+ self.M[:,:,i] * self.F[:,:,i]
         # fix cloning region
         for i in range(len(self.idx_map)):
             x, y = self.idx_map[i]
-            self.new[x,y,0] = u_r[i]
-            self.new[x,y,1] = u_g[i]
-            self.new[x,y,2] = u_b[i]
+            for j in range(3):
+                self.new[x,y,j] = u[i,j]
 
 
 if __name__ == "__main__":
@@ -125,4 +127,4 @@ if __name__ == "__main__":
     test.combine()
     
     plt.imshow(test.new)
-           
+               
