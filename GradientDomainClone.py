@@ -30,8 +30,8 @@ class GradientDomainCloning:
         self.b = np.zeros((n,3))
         # set up sparse matrix A, 4's on main diagnal
         self.A = sparse.lil_matrix((n,n,3),dtype=int)
-        for i in range(3):
-            self.A[:,:,i].setdiag([4 for i in range(n)])
+        for channel in range(3):
+            self.A[:,:,channel].setdiag([4 for i in range(n)])
             
         # idx_map maps coordinate of pixels of the cloned region (if pixel is in mask, then it's an element of idx_map)
         self.idx_map = np.zeros((n,2))
@@ -41,9 +41,7 @@ class GradientDomainCloning:
                     if self.M[:,:,0][i][j]==255:
                         self.idx_map[s] = [i,j]
                             
-        
-
-                                   
+                                      
     # count within-clone-region-neighbor of a pixel in the clone region                 
     def count_neighbor(self, pix_idx):       
         count = 0
@@ -87,7 +85,7 @@ class GradientDomainCloning:
             for n in range(4):
                 if neighbor_idx[n]!=0:
                     for m in range(3):
-                        A[neighbor_idx[n][0],neighbor_idx[n][0],m] = -1
+                        A[i ,neighbor_idx[n], m] = -1
                         
             # b is degraded form if neighbors are all within clone region
             for channel in range(3):
@@ -98,6 +96,7 @@ class GradientDomainCloning:
                 # dummy variable flag used to distinguish between neighbor within the cloning region and on the bounday
                 for channel in range(3):
                     self.b[:,:,channel] =  self.b[:,:,channel]  + flag[0]*self.B[x-1,y,channel] + flag[1]*self.B[x+1,y,channel] + flag[2]*self.B[x,y-1,channel] + flag[3]*self.B[x,y+1,channel]
+        
         # use conjugate gradient to solve for u
         u = np.zeros((n,3))
         for channel in range(3):
