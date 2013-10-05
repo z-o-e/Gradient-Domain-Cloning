@@ -10,9 +10,9 @@ F = 'foreground.jpg'
 B = 'background.jpg'
 M = 'matte.png'
 
-f='f.jpg'
-b='b.jpg'
-m='m.png'
+F='f.jpg'
+B='b.jpg'
+M='m.png'
 
 class GradientDomainCloning:
     def __init__(self, F, B, M):
@@ -28,16 +28,6 @@ class GradientDomainCloning:
         # n is the number of pixels in the clone region (number of equations) 
         n = sum(sum(self.M[:,:,0]))/255
         
-        # nxn matrix A, nx1 vector b are used to solve poisson equation Au=b for nx1 unknown pixel color vector u
-        # r, g, b, 3 channels are calculated seperately
-        self.b = np.zeros((n,3))
-        # set up sparse matrix A, 4's on main diagnal
-        a = sparse.lil_matrix((n,n),dtype=int)
-        self.A = [a, a, a]
-        
-        for channel in range(3):
-            self.A[channel].setdiag([4 for i in range(n)])
-            
         # idx_map maps coordinate of pixels of the cloned region (if pixel is in mask, then it's an element of idx_map)
         self.idx_map = np.zeros((n,2))
         for s in range(n):
@@ -45,7 +35,16 @@ class GradientDomainCloning:
                 for j in range(self.M.shape[1]):
                     if self.M[:,:,0][i][j]==255:
                         self.idx_map[s] = [i,j]
-                            
+        
+        # nxn matrix A, nx1 vector b are used to solve poisson equation Au=b for nx1 unknown pixel color vector u
+        # r, g, b, 3 channels are calculated seperately
+        self.b = np.zeros((n,3))
+        
+        # set up sparse matrix A, 4's on main diagnal
+        a = sparse.lil_matrix((n,n),dtype=int)
+        a.setdiag([4 for i in range(n)])
+        self.A = [a, a, a]
+
                                       
     # count within-clone-region-neighbor of a pixel in the clone region                 
     def count_neighbor(self, pix_idx):       
@@ -105,7 +104,7 @@ class GradientDomainCloning:
         # use conjugate gradient to solve for u
         u = np.zeros((n,3))
         for channel in range(3):
-            u[:,channel] = splinalg.cg(self.A[:,:,channel], self.b[:,:,channel])[0]
+            u[:,channel] = splinalg.cg(self.A[channel], self.b[:,:,channel])[0]
     
         return u
                
