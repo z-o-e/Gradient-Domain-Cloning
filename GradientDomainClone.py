@@ -32,9 +32,11 @@ class GradientDomainCloning:
         # r, g, b, 3 channels are calculated seperately
         self.b = np.zeros((n,3))
         # set up sparse matrix A, 4's on main diagnal
-        self.A = sparse.lil_matrix((n,n,3),dtype=int)
+        a = sparse.lil_matrix((n,n),dtype=int)
+        self.A = [a, a, a]
+        
         for channel in range(3):
-            self.A[:,:,channel].setdiag([4 for i in range(n)])
+            self.A[channel].setdiag([4 for i in range(n)])
             
         # idx_map maps coordinate of pixels of the cloned region (if pixel is in mask, then it's an element of idx_map)
         self.idx_map = np.zeros((n,2))
@@ -88,7 +90,7 @@ class GradientDomainCloning:
             for n in range(4):
                 if neighbor_idx[n]!=0:
                     for m in range(3):
-                        A[i ,neighbor_idx[n], m] = -1
+                        self.A[m][i ,neighbor_idx[n]] = -1
                         
             # b is degraded form if neighbors are all within clone region
             for channel in range(3):
