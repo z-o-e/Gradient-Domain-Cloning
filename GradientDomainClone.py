@@ -4,6 +4,7 @@ import Image
 import numpy as np
 from scipy import sparse
 import scipy.sparse.linalg as splinalg
+import time
 
 
 F = 'foreground.jpg'
@@ -112,7 +113,7 @@ class GradientDomainCloning:
         u = self.poisson_solver()
         # naive copy
         for i in range(3):
-            self.new[:,:,i] = (255-self.M[:,:,i]) * self.B[:,:,i]+ self.M[:,:,i] * self.F[:,:,i]
+            self.new[:,:,i] = self.B[:,:,i]
         # fix cloning region
         for i in range(len(self.idx_map)):
             x, y = self.idx_map[i]
@@ -121,7 +122,7 @@ class GradientDomainCloning:
                     self.new[x,y,j] = u[j,i]
                 else:
                     self.new[x,y,j] = 255
-        np.asarray(self.new, dtype='uint8')
+        self.new = np.asarray(self.new, dtype='uint8')
 
 
 if __name__ == "__main__":
@@ -130,7 +131,9 @@ if __name__ == "__main__":
     
     test.combine()
     
-    new = Image.fromarray(test.new)
+    result = Image.fromarray(test.new)
     
-    plt.imshow(new)
+    result.save('result.png')
+    
+    
                
