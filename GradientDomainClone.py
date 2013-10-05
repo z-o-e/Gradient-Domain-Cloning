@@ -135,5 +135,4 @@ if __name__ == "__main__":
     
     result.save('result.png')
     
-    
-               
+
